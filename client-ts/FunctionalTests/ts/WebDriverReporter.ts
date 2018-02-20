@@ -40,22 +40,24 @@ class WebDriverReporter implements jasmine.CustomReporter {
         if (result.status === "failed") {
             this.taplog(`not ok ${this.specCounter} ${result.fullName}`);
 
-            // Include YAML block with failed expectations
-            this.taplog(" ---");
-            this.taplog(" failures:");
-            for (const expectation of result.failedExpectations) {
-                this.taplog(`   - message: ${expectation.message}`);
+            // Just report the first failure
+            this.taplog("  ---");
+            if (result.failedExpectations && result.failedExpectations.length > 0) {
+                const expectation = result.failedExpectations[0];
+
+                // Include YAML block with failed expectations
+                this.taplog(`    message: ${expectation.message}`);
                 if (expectation.matcherName) {
-                    this.taplog(`     matcher: ${expectation.matcherName}`);
+                    this.taplog(`    operator: ${expectation.matcherName}`);
                 }
                 if (expectation.expected) {
-                    this.taplog(`     expected: ${formatValue(expectation.expected)}`);
+                    this.taplog(`    expected: ${formatValue(expectation.expected)}`);
                 }
                 if (expectation.actual) {
-                    this.taplog(`     actual: ${formatValue(expectation.actual)}`);
+                    this.taplog(`    actual: ${formatValue(expectation.actual)}`);
                 }
             }
-            this.taplog(" ...");
+            this.taplog("  ...");
         } else {
             this.taplog(`ok ${this.specCounter} ${result.fullName}`);
         }
