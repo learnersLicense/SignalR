@@ -2,19 +2,19 @@ import { ChildProcess, spawn } from "child_process";
 import * as fs from "fs";
 import { EOL } from "os";
 import * as path from "path";
-import { Readable } from "stream";
+import { PassThrough, Readable } from "stream";
+
+import * as tapSpec from "tap-spec";
 
 import { run } from "../../selenium-tap-runner/lib";
+
+import * as _debug from "debug";
+const debug = _debug("signalr-functional-tests:run");
 
 process.on("unhandledRejection", (reason) => {
     console.error(`Unhandled promise rejection: ${reason}`);
     process.exit(1);
 });
-
-let configuration = "Debug";
-if (process.argv.indexOf("--release") >= 0) {
-    configuration = "Release";
-}
 
 // Don't let us hang the build. If this process takes more than 10 minutes, we're outta here
 setTimeout(() => {
@@ -40,8 +40,8 @@ function waitForMatch(command: string, process: ChildProcess, regex: RegExp): Pr
                         chunk = chunk.substring(lineEnd + EOL.length);
 
                         const results = regex.exec(chunkLine);
+                        debug(`${command}: ${chunkLine}`);
                         if (results && results.length > 0) {
-                            this.removeAllListeners("data");
                             resolve(results);
                             return;
                         }
@@ -70,14 +70,42 @@ function waitForMatch(command: string, process: ChildProcess, regex: RegExp): Pr
     });
 }
 
+let raw = false;
+let configuration = "Debug";
+
+for (let i = 2; i < process.argv.length; i += 1) {
+    switch (process.argv[i]) {
+        case "--raw":
+            raw = true;
+            break;
+        case "--configuration":
+            i += 1;
+            configuration = process.argv[i];
+            break;
+    }
+}
+
+function createOutput() {
+    if (raw) {
+        return process.stdout;
+    } else {
+        const output = tapSpec();
+        output.pipe(process.stdout);
+        return output;
+    }
+}
+
 (async () => {
     try {
-        console.log("TAP version 13");
-        console.log("# SignalR Browser Functional Tests");
-
         const serverPath = path.resolve(__dirname, "..", "bin", configuration, "netcoreapp2.1", "FunctionalTests.dll");
 
-        const dotnet = spawn("dotnet", [serverPath]);
+        debug(`Launching Functional Test Server: ${serverPath}`);
+        const dotnet = spawn("dotnet", [serverPath], {
+            env: {
+                ...process.env,
+                ["ASPNETCORE_URLS"]: "http://127.0.0.1:0"
+            },
+        });
 
         function cleanup() {
             if (dotnet && !dotnet.killed) {
@@ -89,11 +117,14 @@ function waitForMatch(command: string, process: ChildProcess, regex: RegExp): Pr
         process.on("SIGINT", cleanup);
         process.on("exit", cleanup);
 
-        const results = await waitForMatch("dotnet", dotnet, /Now listening on: (http:\/\/localhost:[\d]+)/);
+        debug("Waiting for Functional Test Server to start");
+        const results = await waitForMatch("dotnet", dotnet, /Now listening on: (http:\/\/[^\/]+:[\d]+)/);
+        debug(`Functional Test Server has started at ${results[1]}`);
 
-        const failureCount = await run({
+        const failureCount = await run("SignalR Browser Functional Tests", {
             browser: "chrome",
             headless: true,
+            output: createOutput(),
             seleniumDir: path.resolve(__dirname, "..", "..", "selenium-tap-runner", "node_modules", "selenium-standalone", ".selenium"),
             seleniumPort: "4444",
             url: results[1],

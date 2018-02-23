@@ -7,6 +7,7 @@
   "dependencies": {},
   "devDependencies": {
     "@types/node": "^9.4.6",
+    "debug": "^3.1.0",
     "es6-promise": "^4.2.2",
     "tap-mocha-reporter": "^3.0.6",
     "tap-spec": "^4.1.1",
@@ -19,10 +20,7 @@
     "build:tsc": "node ../node_modules/typescript/bin/tsc --project ./tsconfig.json",
     "build:rollup": "node ../node_modules/rollup/bin/rollup -c",
     "pretest": "npm run build",
-    "rawtest": "ts-node --project ./selenium/tsconfig.json ./selenium/run-tests.ts",
-    "test": "npm run rawtest | tap-spec",
-    "ci-test-Debug": "npm run pretest && ts-node --project ./selenium/tsconfig.json ./selenium/run-tests.ts | tap-spec",
-    "ci-test-Release": "npm run pretest && ts-node --project ./selenium/tsconfig.json ./selenium/run-tests.ts --release | tap-spec"
+    "test": "ts-node --project ./selenium/tsconfig.json ./selenium/run-tests.ts"
   },
   "author": "",
   "license": "Apache-2.0"

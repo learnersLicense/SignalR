@@ -8,6 +8,7 @@ const debug = _debug("selenium-tap-runner:bin");
 
 const argv = yargs
     .option("url", { demand: true, description: "The URL of the server to test against" })
+    .option("name", { demand: true, description: "The name of the test run" })
     .option("browser", { alias: "b", default: "chrome", description: "The browser to launch" })
     .option("headless", { alias: "h" })
     .option("chrome-driver-log", { })
@@ -23,7 +24,7 @@ const argv = yargs
     })
     .argv;
 
-run({
+run(argv.name, {
     browser: argv.browser,
     chromeDriverLogFile: argv["chrome-driver-log"],
     chromeVerboseLogging: !!argv["chrome-driver-log-verbose"],

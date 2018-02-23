@@ -2,9 +2,11 @@ import * as path from "path";
 import { promisify } from "util";
 
 import { ChildProcess, SpawnOptions } from "child_process";
+import { EOL } from "os";
 import * as selenium from "selenium-standalone";
 import { Builder, logging, WebDriver, WebElement } from "selenium-webdriver";
 import { Options as ChromeOptions } from "selenium-webdriver/chrome";
+import { Readable, Writable } from "stream";
 
 import { delay, flushEntries, getEntryContent, getLogEntry, isComplete, waitForElement } from "./utils";
 
@@ -19,6 +21,7 @@ export interface RunnerOptions {
     url: string;
     chromeDriverLogFile?: string;
     chromeVerboseLogging?: boolean;
+    output?: Writable;
 }
 
 function applyBrowserSettings(options: RunnerOptions, builder: Builder) {
@@ -47,10 +50,15 @@ function generateJavaArgs(options: RunnerOptions): string[] {
     return results;
 }
 
-export async function run(options: RunnerOptions): Promise<number> {
+export async function run(runName: string, options: RunnerOptions): Promise<number> {
+    const output = options.output || (process.stdout as Writable);
+
     debug("Starting selenium server...");
     debug(`Using selenium dir: ${options.seleniumDir}`);
     debug(`Using selenium port: ${options.seleniumPort}`);
+
+    output.write(`TAP version 13${EOL}`);
+    output.write(`# ${runName}${EOL}`);
 
     const seleniumProcess = await promisify(selenium.start)({
         baseDir: options["selenium-dir"],
@@ -100,7 +108,7 @@ export async function run(options: RunnerOptions): Promise<number> {
                 if (content.startsWith("not ok")) {
                     failureCount += 1;
                 }
-                console.log(content);
+                output.write(content + EOL);
             }
         }
 
@@ -109,7 +117,7 @@ export async function run(options: RunnerOptions): Promise<number> {
             if (entry.startsWith("not ok")) {
                 failureCount += 1;
             }
-            console.log(entry);
+            output.write(entry + EOL);
         });
 
     } finally {
