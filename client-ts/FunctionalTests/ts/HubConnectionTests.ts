@@ -394,15 +394,8 @@ describe("hubConnection", () => {
                             // and a Uint8Array even though Buffer instances are also Uint8Array instances
                             value.ByteArray = new Uint8Array(value.ByteArray);
 
-                            // GUIDs are serialized as raw type which is a string containing bytes which need to
-                            // be extracted. Note that with msgpack5 the original bytes will be encoded with utf8
-                            // and needs to be decoded. To not go into utf8 encoding intricacies the test uses values
-                            // less than 0x80.
-                            const guidBytes = [];
-                            for (let i = 0; i < value.GUID.length; i++) {
-                                guidBytes.push(value.GUID.charCodeAt(i));
-                            }
-                            value.GUID = new Uint8Array(guidBytes);
+                            // GUIDs are serialized as Buffer as well.
+                            value.GUID = new Uint8Array(value.GUID);
                         }
                         expect(value).toEqual(complexObject);
                     })
