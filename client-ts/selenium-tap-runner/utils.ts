@@ -49,7 +49,7 @@ export async function getLogEntry(index: number, element: WebElement): Promise<W
 }
 
 export async function getEntryContent(element: WebElement): Promise<string> {
-    return await element.getAttribute("innerHTML");
+    return await element.getAttribute("value");
 }
 
 export async function flushEntries(index: number, element: WebElement, cb: (entry: string) => void): Promise<void> {

@@ -72,13 +72,16 @@ function waitForMatch(command: string, process: ChildProcess, regex: RegExp): Pr
 
 (async () => {
     try {
+        console.log("TAP version 13");
+        console.log("# SignalR Browser Functional Tests");
+
         const serverPath = path.resolve(__dirname, "..", "bin", configuration, "netcoreapp2.1", "FunctionalTests.dll");
 
         const dotnet = spawn("dotnet", [serverPath]);
 
         function cleanup() {
             if (dotnet && !dotnet.killed) {
-                console.error("Killing 'dotnet' process");
+                console.log("Terminating dotnet process");
                 dotnet.kill();
             }
         }
