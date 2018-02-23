@@ -83,6 +83,10 @@ for (let i = 2; i < process.argv.length; i += 1) {
             i += 1;
             configuration = process.argv[i];
             break;
+        case "-v":
+        case "--verbose":
+            _debug.enable("signalr-functional-tests:*");
+            break;
     }
 }
 

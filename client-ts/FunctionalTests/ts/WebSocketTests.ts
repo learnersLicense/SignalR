@@ -16,11 +16,12 @@ if (typeof WebSocket !== "undefined") {
 
             webSocket.onmessage = (event) => {
                 expect(event.data).toEqual(message);
+                webSocket.close();
             };
 
             webSocket.onclose = (event) => {
-                expect(event.wasClean).toBe(true);
                 expect(event.code).toEqual(1000);
+                expect(event.wasClean).toBe(true, "WebSocket did not close cleanly");
 
                 done();
             };

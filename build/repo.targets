@@ -35,7 +35,7 @@
     <Message Text="Updating Selenium" Importance="high" />
     <Exec Command="npm run update-selenium" WorkingDirectory="$(RepositoryRoot)client-ts/selenium-tap-runner" IgnoreStandardErrorWarningFormat="true" />
     <Message Text="Running TypeScript client Browser tests" Importance="high" />
-    <Exec Command="npm test -- --configuration $(Configuration)" WorkingDirectory="$(RepositoryRoot)client-ts/FunctionalTests" IgnoreStandardErrorWarningFormat="true" />
+    <Exec Command="npm test -- --configuration $(Configuration) -v" WorkingDirectory="$(RepositoryRoot)client-ts/FunctionalTests" IgnoreStandardErrorWarningFormat="true" />
   </Target>
 
   <PropertyGroup>
