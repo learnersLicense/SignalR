@@ -24,6 +24,7 @@ setTimeout(() => {
 
 function waitForMatch(command: string, process: ChildProcess, regex: RegExp): Promise<RegExpMatchArray> {
     return new Promise<RegExpMatchArray>((resolve, reject) => {
+        let commandDebug = _debug(`signalr-functional-tests:${command}`);
         try {
             let lastLine = "";
 
@@ -40,7 +41,7 @@ function waitForMatch(command: string, process: ChildProcess, regex: RegExp): Pr
                         chunk = chunk.substring(lineEnd + EOL.length);
 
                         const results = regex.exec(chunkLine);
-                        debug(`${command}: ${chunkLine}`);
+                        commandDebug(chunkLine);
                         if (results && results.length > 0) {
                             resolve(results);
                             return;

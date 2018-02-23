@@ -463,31 +463,29 @@ describe("hubConnection", () => {
             it("can connect to hub with authorization", async (done) => {
                 const message = "你好，世界！";
 
-                let hubConnection;
-                getJwtToken("http://" + document.location.host + "/generateJwtToken")
-                    .then((jwtToken) => {
-                        hubConnection = new HubConnection("/authorizedhub", {
-                            accessTokenFactory: () => jwtToken,
-                            logger: LogLevel.Trace,
-                            transport: transportType,
-                        });
-                        hubConnection.onclose((error) => {
-                            expect(error).toBe(undefined);
-                            done();
-                        });
-                        return hubConnection.start();
-                    })
-                    .then(() => {
-                        return hubConnection.invoke("Echo", message);
-                    })
-                    .then((response) => {
-                        expect(response).toEqual(message);
-                        done();
-                    })
-                    .catch((err) => {
-                        fail(err);
+                try {
+                    const jwtToken = await getJwtToken("http://" + document.location.host + "/generateJwtToken");
+                    const hubConnection = new HubConnection("/authorizedhub", {
+                        accessTokenFactory: () => jwtToken,
+                        logger: LogLevel.Trace,
+                        transport: transportType,
+                    });
+                    hubConnection.onclose((error) => {
+                        expect(error).toBe(undefined);
                         done();
                     });
+                    await hubConnection.start();
+                    const response = await hubConnection.invoke("Echo", message);
+
+                    expect(response).toEqual(message);
+
+                    await hubConnection.stop();
+
+                    done();
+                } catch (err) {
+                    fail(err);
+                    done();
+                }
             });
 
             if (transportType !== TransportType.LongPolling) {
