@@ -39,9 +39,7 @@ class WebDriverReporter implements jasmine.CustomReporter {
     public specDone(result: jasmine.CustomReporterResult): void {
         if (result.status === "disabled") {
             return;
-        }
-
-        if (result.status === "failed") {
+        } else if (result.status === "failed") {
             this.taplog(`not ok ${this.specCounter} ${result.fullName}`);
 
             // Just report the first failure
