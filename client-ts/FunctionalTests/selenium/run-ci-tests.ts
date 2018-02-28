@@ -39,10 +39,10 @@ for (let i = 2; i < process.argv.length; i += 1) {
 
 function failPrereq(error: string) {
     if (force) {
-        console.error(`Browser functional tests cannot be run because ${error}`);
+        console.error(`Browser functional tests cannot be run: ${error}`);
         process.exit(1);
     } else {
-        console.log(`Skipping browser functional Tests because ${error}`);
+        console.log(`Skipping browser functional Tests: ${error}`);
 
         // Zero exit code because we don't want to fail the build.
         process.exit(0);
