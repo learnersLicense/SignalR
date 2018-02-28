@@ -3,8 +3,7 @@ import * as os from "os";
 import { By, logging, WebDriver, WebElement } from "selenium-webdriver";
 
 import * as _debug from "debug";
-import { spawn } from "child_process";
-const debug = _debug("selenium-tap-runner:utils");
+const debug = _debug("webdriver-tap-runner:utils");
 
 export function delay(ms: number): Promise<void> {
     return new Promise<void>((resolve, reject) => {

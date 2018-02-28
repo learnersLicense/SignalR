@@ -6,7 +6,7 @@ import { PassThrough, Readable } from "stream";
 
 import * as tapSpec from "tap-spec";
 
-import { run } from "../../selenium-tap-runner/lib";
+import { run } from "../../webdriver-tap-runner/lib";
 
 import * as _debug from "debug";
 const debug = _debug("signalr-functional-tests:run");
@@ -24,7 +24,7 @@ setTimeout(() => {
 
 function waitForMatch(command: string, process: ChildProcess, regex: RegExp): Promise<RegExpMatchArray> {
     return new Promise<RegExpMatchArray>((resolve, reject) => {
-        let commandDebug = _debug(`signalr-functional-tests:${command}`);
+        const commandDebug = _debug(`signalr-functional-tests:${command}`);
         try {
             let lastLine = "";
 
@@ -128,11 +128,9 @@ function createOutput() {
 
         const failureCount = await run("SignalR Browser Functional Tests", {
             browser: "chrome",
-            headless: true,
             output: createOutput(),
-            seleniumDir: path.resolve(__dirname, "..", "..", "selenium-tap-runner", "node_modules", "selenium-standalone", ".selenium"),
-            seleniumPort: "4444",
             url: results[1],
+            webdriverPort: 9515,
         });
         process.exit(failureCount);
     } catch (e) {
