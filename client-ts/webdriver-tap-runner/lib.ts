@@ -18,6 +18,7 @@ const debug = _debug("webdriver-tap-runner:bin");
 export interface RunnerOptions {
     browser: string;
     url: string;
+    chromeBinaryPath?: string,
     chromeDriverLogFile?: string;
     chromeVerboseLogging?: boolean;
     output?: Writable;
@@ -28,6 +29,17 @@ function applyBrowserSettings(options: RunnerOptions, builder: Builder) {
     if (options.browser === "chrome") {
         const chromeOptions = new ChromeOptions();
         chromeOptions.headless();
+
+        // If we're root, we need to disable the sandbox.
+        if (process.getuid && process.getuid() === 0) {
+            chromeOptions.addArguments("--no-sandbox");
+        }
+
+        if (options.chromeBinaryPath) {
+            debug(`Using Chrome Binary Path: ${options.chromeBinaryPath}`);
+            chromeOptions.setChromeBinaryPath(options.chromeBinaryPath);
+        }
+
         builder.setChromeOptions(chromeOptions);
     }
 }

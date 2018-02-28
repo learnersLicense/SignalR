@@ -73,6 +73,8 @@ function waitForMatch(command: string, process: ChildProcess, regex: RegExp): Pr
 
 let raw = false;
 let configuration = "Debug";
+let chromePath: string;
+let spec: string;
 
 for (let i = 2; i < process.argv.length; i += 1) {
     switch (process.argv[i]) {
@@ -87,7 +89,19 @@ for (let i = 2; i < process.argv.length; i += 1) {
         case "--verbose":
             _debug.enable("signalr-functional-tests:*");
             break;
+        case "--chrome":
+            i += 1;
+            chromePath = process.argv[i];
+            break;
+        case "--spec":
+            i += 1;
+            spec = process.argv[i];
+            break;
     }
+}
+
+if (chromePath) {
+    debug(`Using Google Chrome at: '${chromePath}'`);
 }
 
 function createOutput() {
@@ -126,10 +140,18 @@ function createOutput() {
         const results = await waitForMatch("dotnet", dotnet, /Now listening on: (http:\/\/[^\/]+:[\d]+)/);
         debug(`Functional Test Server has started at ${results[1]}`);
 
+        let url = results[1] + "?cacheBust=true";
+        if (spec) {
+            url += `&spec=${encodeURI(spec)}`;
+        }
+
+        debug(`Using server url: ${url}`);
+
         const failureCount = await run("SignalR Browser Functional Tests", {
             browser: "chrome",
+            chromeBinaryPath: chromePath,
             output: createOutput(),
-            url: results[1],
+            url,
             webdriverPort: 9515,
         });
         process.exit(failureCount);
