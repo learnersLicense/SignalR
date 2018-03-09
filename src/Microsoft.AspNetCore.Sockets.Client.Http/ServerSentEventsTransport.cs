@@ -46,6 +46,7 @@ namespace Microsoft.AspNetCore.Sockets.Client
 
         public Task StartAsync(Uri url, IDuplexPipe application, TransferMode requestedTransferMode, IConnection connection)
         {
+            var startTcs = new TaskCompletionSource<object>();
             if (requestedTransferMode != TransferMode.Binary && requestedTransferMode != TransferMode.Text)
             {
                 throw new ArgumentException("Invalid transfer mode.", nameof(requestedTransferMode));
@@ -57,7 +58,7 @@ namespace Microsoft.AspNetCore.Sockets.Client
             Log.StartTransport(_logger, Mode.Value);
 
             var sendTask = SendUtils.SendMessages(url, _application, _httpClient, _httpOptions, _transportCts, _logger);
-            var receiveTask = OpenConnection(_application, url, _transportCts.Token);
+            var receiveTask = OpenConnection(_application, url, startTcs, _transportCts.Token);
 
             Running = Task.WhenAll(sendTask, receiveTask).ContinueWith(t =>
             {
@@ -68,10 +69,10 @@ namespace Microsoft.AspNetCore.Sockets.Client
                 return t;
             }).Unwrap();
 
-            return Task.CompletedTask;
+            return startTcs.Task;
         }
 
-        private async Task OpenConnection(IDuplexPipe application, Uri url, CancellationToken cancellationToken)
+        private async Task OpenConnection(IDuplexPipe application, Uri url, TaskCompletionSource<object> tcs, CancellationToken cancellationToken)
         {
             Log.StartReceive(_logger);
 
@@ -79,6 +80,13 @@ namespace Microsoft.AspNetCore.Sockets.Client
             SendUtils.PrepareHttpRequest(request, _httpOptions);
             request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("text/event-stream"));
             var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+            if (!response.IsSuccessStatusCode)
+            {
+                Log.TransportStopping(_logger);
+                tcs.TrySetException(new InvalidOperationException("The transport did not receive a successful response from the server"));
+                return;
+            }
+            tcs.SetResult(null);
 
             using (var stream = await response.Content.ReadAsStreamAsync())
             {

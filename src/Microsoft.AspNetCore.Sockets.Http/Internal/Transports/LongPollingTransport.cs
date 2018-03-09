@@ -30,10 +30,18 @@ namespace Microsoft.AspNetCore.Sockets.Internal.Transports
         {
             try
             {
+                var headersFlushed = false;
+                if (context.Items.TryGetValue("FirstRequest", out var firstRequest))
+                {
+                    if ((bool)firstRequest) {
+                        await context.Response.Body.FlushAsync();
+                        headersFlushed = true;
+                    }
+                }
                 var result = await _application.ReadAsync(token);
                 var buffer = result.Buffer;
 
-                if (buffer.IsEmpty && result.IsCompleted)
+                if (buffer.IsEmpty && result.IsCompleted && !headersFlushed)
                 {
                     Log.LongPolling204(_logger);
                     context.Response.ContentType = "text/plain";
@@ -45,8 +53,10 @@ namespace Microsoft.AspNetCore.Sockets.Internal.Transports
                 // but it's too late to emit the 204 required by being cancelled.
 
                 Log.LongPollingWritingMessage(_logger, buffer.Length);
-
-                context.Response.ContentLength = buffer.Length;
+                if (!headersFlushed)
+                {
+                    context.Response.ContentLength = buffer.Length;
+                }
                 context.Response.ContentType = "application/octet-stream";
 
                 try

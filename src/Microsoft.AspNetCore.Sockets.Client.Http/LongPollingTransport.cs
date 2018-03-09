@@ -55,7 +55,8 @@ namespace Microsoft.AspNetCore.Sockets.Client
             Log.StartTransport(_logger, Mode.Value);
 
             // Start sending and polling (ask for binary if the server supports it)
-            _poller = Poll(url, _transportCts.Token);
+            var startTcs = new TaskCompletionSource<object>();
+            _poller = Poll(url, startTcs, _transportCts.Token);
             _sender = SendUtils.SendMessages(url, _application, _httpClient, _httpOptions, _transportCts, _logger);
 
             Running = Task.WhenAll(_sender, _poller).ContinueWith(t =>
@@ -66,7 +67,7 @@ namespace Microsoft.AspNetCore.Sockets.Client
                 return t;
             }).Unwrap();
 
-            return Task.CompletedTask;
+            return startTcs.Task;
         }
 
         public async Task StopAsync()
@@ -85,7 +86,7 @@ namespace Microsoft.AspNetCore.Sockets.Client
             }
         }
 
-        private async Task Poll(Uri pollUrl, CancellationToken cancellationToken)
+        private async Task Poll(Uri pollUrl, TaskCompletionSource<object> startTcs,CancellationToken cancellationToken)
         {
             Log.StartReceive(_logger);
             try
@@ -110,6 +111,7 @@ namespace Microsoft.AspNetCore.Sockets.Client
                     }
 
                     response.EnsureSuccessStatusCode();
+                    startTcs.SetResult(null);
 
                     if (response.StatusCode == HttpStatusCode.NoContent || cancellationToken.IsCancellationRequested)
                     {
@@ -135,6 +137,7 @@ namespace Microsoft.AspNetCore.Sockets.Client
             }
             catch (Exception ex)
             {
+                startTcs.TrySetException(ex);
                 Log.ErrorPolling(_logger, pollUrl, ex);
                 throw;
             }

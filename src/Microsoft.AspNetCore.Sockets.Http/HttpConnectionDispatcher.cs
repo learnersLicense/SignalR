@@ -192,6 +192,11 @@ namespace Microsoft.AspNetCore.Sockets
                             Log.PollCanceled(_logger, connection.ConnectionId, existing.TraceIdentifier);
                         }
                     }
+                    else
+                    {
+                        // Hack to indicate that we're handling the first poll.
+                        context.Items.Add("FirstRequest", true);
+                    }
 
                     // Mark the connection as active
                     connection.Status = DefaultConnectionContext.ConnectionStatus.Active;
