@@ -80,13 +80,18 @@ namespace Microsoft.AspNetCore.Sockets.Client
             SendUtils.PrepareHttpRequest(request, _httpOptions);
             request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("text/event-stream"));
             var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
-            if (!response.IsSuccessStatusCode)
+
+            try
+            {
+                response.EnsureSuccessStatusCode();
+                tcs.SetResult(null);
+            }
+            catch (Exception ex)
             {
                 Log.TransportStopping(_logger);
-                tcs.TrySetException(new InvalidOperationException("The transport did not receive a successful response from the server"));
+                tcs.TrySetException(ex);
                 return;
             }
-            tcs.SetResult(null);
 
             using (var stream = await response.Content.ReadAsStreamAsync())
             {

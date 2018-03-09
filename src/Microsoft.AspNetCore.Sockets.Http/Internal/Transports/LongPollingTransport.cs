@@ -17,31 +17,31 @@ namespace Microsoft.AspNetCore.Sockets.Internal.Transports
         private readonly ILogger _logger;
         private readonly CancellationToken _timeoutToken;
         private readonly string _connectionId;
+        private readonly bool _isFirstRequest;
 
-        public LongPollingTransport(CancellationToken timeoutToken, PipeReader application, string connectionId, ILoggerFactory loggerFactory)
+        public LongPollingTransport(CancellationToken timeoutToken, PipeReader application, string connectionId, ILoggerFactory loggerFactory, bool isFirstRequest = false)
         {
             _timeoutToken = timeoutToken;
             _application = application;
             _connectionId = connectionId;
             _logger = loggerFactory.CreateLogger<LongPollingTransport>();
+            _isFirstRequest = isFirstRequest;
         }
 
         public async Task ProcessRequestAsync(HttpContext context, CancellationToken token)
         {
             try
             {
-                var headersFlushed = false;
-                if (context.Items.TryGetValue("FirstRequest", out var firstRequest))
+                if (_isFirstRequest)
                 {
-                    if ((bool)firstRequest) {
                         await context.Response.Body.FlushAsync();
-                        headersFlushed = true;
-                    }
                 }
                 var result = await _application.ReadAsync(token);
                 var buffer = result.Buffer;
 
-                if (buffer.IsEmpty && result.IsCompleted && !headersFlushed)
+                // IF the buffer is empty and the read result is completed on the first request
+                // we still have to send a 200 because the headers have already been flushed.
+                if (buffer.IsEmpty && result.IsCompleted && !_isFirstRequest)
                 {
                     Log.LongPolling204(_logger);
                     context.Response.ContentType = "text/plain";
@@ -53,7 +53,7 @@ namespace Microsoft.AspNetCore.Sockets.Internal.Transports
                 // but it's too late to emit the 204 required by being cancelled.
 
                 Log.LongPollingWritingMessage(_logger, buffer.Length);
-                if (!headersFlushed)
+                if (!_isFirstRequest)
                 {
                     context.Response.ContentLength = buffer.Length;
                 }

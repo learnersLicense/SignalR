@@ -396,7 +396,7 @@ namespace Microsoft.AspNetCore.Sockets.Tests
         }
 
         [Theory]
-        [InlineData(TransportType.LongPolling, 204)]
+        [InlineData(TransportType.LongPolling, 200)]
         [InlineData(TransportType.WebSockets, 404)]
         [InlineData(TransportType.ServerSentEvents, 404)]
         public async Task EndPointThatOnlySupportsLongPollingRejectsOtherTransports(TransportType transportType, int status)
@@ -499,6 +499,7 @@ namespace Microsoft.AspNetCore.Sockets.Tests
         {
             using (StartLog(out var loggerFactory, LogLevel.Debug))
             {
+                //while (!System.Diagnostics.Debugger.IsAttached) { }
                 var manager = CreateConnectionManager(loggerFactory);
                 var connection = manager.CreateConnection();
 
@@ -513,6 +514,9 @@ namespace Microsoft.AspNetCore.Sockets.Tests
                 var app = builder.Build();
                 await dispatcher.ExecuteAsync(context, new HttpSocketOptions(), app);
 
+                Assert.Equal(StatusCodes.Status200OK, context.Response.StatusCode);
+
+                await dispatcher.ExecuteAsync(context, new HttpSocketOptions(), app);
                 Assert.Equal(StatusCodes.Status204NoContent, context.Response.StatusCode);
 
                 bool exists = manager.TryGetConnection(connection.ConnectionId, out _);
@@ -753,6 +757,8 @@ namespace Microsoft.AspNetCore.Sockets.Tests
         {
             using (StartLog(out var loggerFactory, LogLevel.Debug))
             {
+                //while (!System.Diagnostics.Debugger.IsAttached) { }
+
                 var manager = CreateConnectionManager(loggerFactory);
                 var connection = manager.CreateConnection();
 
@@ -773,9 +779,18 @@ namespace Microsoft.AspNetCore.Sockets.Tests
                 // Write to the application
                 await connection.Application.Output.WriteAsync(buffer);
 
-                await task;
+                // The fir
+                Assert.Equal(StatusCodes.Status200OK, context.Response.StatusCode);
+
+                task = dispatcher.ExecuteAsync(context, options, app);
+
+                await connection.Application.Output.WriteAsync(buffer);
+
 
                 Assert.Equal(StatusCodes.Status204NoContent, context.Response.StatusCode);
+
+                await task;
+
                 bool exists = manager.TryGetConnection(connection.ConnectionId, out _);
                 Assert.False(exists);
             }

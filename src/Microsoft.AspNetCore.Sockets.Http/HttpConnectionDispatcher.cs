@@ -176,6 +176,7 @@ namespace Microsoft.AspNetCore.Sockets
                         return;
                     }
 
+                    var isFirstRequest = false;
                     if (connection.Status == DefaultConnectionContext.ConnectionStatus.Active)
                     {
                         var existing = connection.GetHttpContext();
@@ -192,11 +193,6 @@ namespace Microsoft.AspNetCore.Sockets
                             Log.PollCanceled(_logger, connection.ConnectionId, existing.TraceIdentifier);
                         }
                     }
-                    else
-                    {
-                        // Hack to indicate that we're handling the first poll.
-                        context.Items.Add("FirstRequest", true);
-                    }
 
                     // Mark the connection as active
                     connection.Status = DefaultConnectionContext.ConnectionStatus.Active;
@@ -204,6 +200,8 @@ namespace Microsoft.AspNetCore.Sockets
                     // Raise OnConnected for new connections only since polls happen all the time
                     if (connection.ApplicationTask == null)
                     {
+                        isFirstRequest = true;
+
                         Log.EstablishedConnection(_logger);
 
                         connection.Metadata[ConnectionMetadataNames.Transport] = TransportType.LongPolling;
@@ -225,7 +223,7 @@ namespace Microsoft.AspNetCore.Sockets
                     context.Response.RegisterForDispose(timeoutSource);
                     context.Response.RegisterForDispose(tokenSource);
 
-                    var longPolling = new LongPollingTransport(timeoutSource.Token, connection.Application.Input, connection.ConnectionId, _loggerFactory);
+                    var longPolling = new LongPollingTransport(timeoutSource.Token, connection.Application.Input, connection.ConnectionId, _loggerFactory, isFirstRequest);
 
                     // Start the transport
                     connection.TransportTask = longPolling.ProcessRequestAsync(context, tokenSource.Token);
